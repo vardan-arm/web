@@ -11,6 +11,8 @@ Rails.application.configure do
     config.logger = ActiveSupport::Logger.new(STDOUT)
   end
 
+  config.log_level = ENV.fetch('RAILS_LOG_LEVEL', 'INFO').to_sym
+
   config.colorize_logging = false
   config.logger.formatter = StandardNotesFormatter.new
 
@@ -64,10 +66,6 @@ Rails.application.configure do
   # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
   # config.force_ssl = true
 
-  # Use the lowest log level to ensure availability of diagnostic information
-  # when problems arise.
-  config.log_level = :info
-
   # Prepend all log lines with the following tags.
   # config.log_tags = [ :subdomain, :uuid ]
 
@@ -89,7 +87,7 @@ Rails.application.configure do
   config.i18n.fallbacks = true
 
   # Send deprecation notices to registered listeners.
-  config.active_support.deprecation = :notify
+  ActiveSupport::Deprecation.silenced = true
 
   # Do not dump schema after migrations.
   # config.active_record.dump_schema_after_migration = false

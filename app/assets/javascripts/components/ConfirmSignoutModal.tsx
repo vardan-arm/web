@@ -15,7 +15,7 @@ type Props = {
   appState: AppState;
 };
 
-const ConfirmSignoutContainer = observer((props: Props) => {
+export const ConfirmSignoutContainer = observer((props: Props) => {
   if (!props.appState.accountMenu.signingOut) {
     return null;
   }
@@ -23,9 +23,7 @@ const ConfirmSignoutContainer = observer((props: Props) => {
 });
 
 const ConfirmSignoutModal = observer(({ application, appState }: Props) => {
-  const [deleteLocalBackups, setDeleteLocalBackups] = useState(
-    application.hasAccount()
-  );
+  const [deleteLocalBackups, setDeleteLocalBackups] = useState(false);
 
   const cancelRef = useRef<HTMLButtonElement>();
   function close() {

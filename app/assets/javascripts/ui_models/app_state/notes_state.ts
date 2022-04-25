@@ -18,6 +18,7 @@ import {
 } from 'mobx';
 import { WebApplication } from '../application';
 import { Editor } from '../editor';
+import { AppState } from './app_state';
 
 export class NotesState {
   lastSelectedNote: SNNote | undefined;
@@ -32,6 +33,7 @@ export class NotesState {
 
   constructor(
     private application: WebApplication,
+    private appState: AppState,
     private onActiveEditorChanged: () => Promise<void>,
     appEventListeners: (() => void)[]
   ) {
@@ -108,13 +110,14 @@ export class NotesState {
     }
   }
 
-  async selectNote(uuid: UuidString): Promise<void> {
+  async selectNote(uuid: UuidString, userTriggered?: boolean): Promise<void> {
     const note = this.application.findItem(uuid) as SNNote;
 
     if (note) {
       if (
-        this.io.activeModifiers.has(KeyboardModifier.Meta) ||
-        this.io.activeModifiers.has(KeyboardModifier.Ctrl)
+        userTriggered &&
+        (this.io.activeModifiers.has(KeyboardModifier.Meta) ||
+          this.io.activeModifiers.has(KeyboardModifier.Ctrl))
       ) {
         if (this.selectedNotes[uuid]) {
           delete this.selectedNotes[uuid];
@@ -124,7 +127,10 @@ export class NotesState {
             this.lastSelectedNote = note;
           });
         }
-      } else if (this.io.activeModifiers.has(KeyboardModifier.Shift)) {
+      } else if (
+        userTriggered &&
+        this.io.activeModifiers.has(KeyboardModifier.Shift)
+      ) {
         await this.selectNotesRange(note);
       } else {
         const shouldSelectNote =
@@ -164,6 +170,8 @@ export class NotesState {
     } else {
       this.activeEditor.setNote(note);
     }
+    
+    this.appState.noteTags.reloadTags();
     await this.onActiveEditorChanged();
 
     if (note.waitingForKey) {
@@ -322,11 +330,17 @@ export class NotesState {
 
   async addTagToSelectedNotes(tag: SNTag): Promise<void> {
     const selectedNotes = Object.values(this.selectedNotes);
-    await this.application.changeItem(tag.uuid, (mutator) => {
-      for (const note of selectedNotes) {
-        mutator.addItemAsRelationship(note);
-      }
-    });
+    const parentChainTags = this.application.getTagParentChain(tag);
+    const tagsToAdd = [...parentChainTags, tag];
+    await Promise.all(
+      tagsToAdd.map(async (tag) => {
+        await this.application.changeItem(tag.uuid, (mutator) => {
+          for (const note of selectedNotes) {
+            mutator.addItemAsRelationship(note);
+          }
+        });
+      })
+    );
     this.application.sync();
   }
 
@@ -338,13 +352,13 @@ export class NotesState {
       }
     });
     this.application.sync();
+
   }
 
   isTagInSelectedNotes(tag: SNTag): boolean {
     const selectedNotes = Object.values(this.selectedNotes);
     return selectedNotes.every((note) =>
-      this.application
-        .getAppState()
+      this.appState
         .getNoteTags(note)
         .find((noteTag) => noteTag.uuid === tag.uuid)
     );

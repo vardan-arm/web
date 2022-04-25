@@ -34,7 +34,6 @@ import {
 } from './directives/functional';
 
 import {
-  AccountMenu,
   ActionsMenu,
   ComponentModal,
   ComponentView,
@@ -59,11 +58,13 @@ import { SessionsModalDirective } from './components/SessionsModal';
 import { NoAccountWarningDirective } from './components/NoAccountWarning';
 import { NoProtectionsdNoteWarningDirective } from './components/NoProtectionsNoteWarning';
 import { SearchOptionsDirective } from './components/SearchOptions';
+import { AccountMenuDirective } from './components/AccountMenu';
 import { ConfirmSignoutDirective } from './components/ConfirmSignoutModal';
 import { MultipleSelectedNotesDirective } from './components/MultipleSelectedNotes';
 import { NotesContextMenuDirective } from './components/NotesContextMenu';
 import { NotesOptionsPanelDirective } from './components/NotesOptionsPanel';
 import { IconDirective } from './components/Icon';
+import { NoteTagsContainerDirective } from './components/NoteTagsContainer';
 
 function reloadHiddenFirefoxTab(): boolean {
   /**
@@ -88,7 +89,8 @@ function reloadHiddenFirefoxTab(): boolean {
 
 const startApplication: StartApplication = async function startApplication(
   defaultSyncServerHost: string,
-  bridge: Bridge
+  bridge: Bridge,
+  nextVersionSyncServerHost: string,
 ) {
   if (reloadHiddenFirefoxTab()) {
     return;
@@ -105,6 +107,7 @@ const startApplication: StartApplication = async function startApplication(
     .config(configRoutes)
     .constant('bridge', bridge)
     .constant('defaultSyncServerHost', defaultSyncServerHost)
+    .constant('nextVersionSyncServerHost', nextVersionSyncServerHost)
     .constant('appVersion', bridge.appVersion);
 
   // Controllers
@@ -134,7 +137,6 @@ const startApplication: StartApplication = async function startApplication(
   // Directives - Views
   angular
     .module('app')
-    .directive('accountMenu', () => new AccountMenu())
     .directive('accountSwitcher', () => new AccountSwitcher())
     .directive('actionsMenu', () => new ActionsMenu())
     .directive('challengeModal', () => new ChallengeModal())
@@ -150,6 +152,7 @@ const startApplication: StartApplication = async function startApplication(
     .directive('historyMenu', () => new HistoryMenu())
     .directive('syncResolutionMenu', () => new SyncResolutionMenu())
     .directive('sessionsModal', SessionsModalDirective)
+    .directive('accountMenu', AccountMenuDirective)
     .directive('noAccountWarning', NoAccountWarningDirective)
     .directive('protectedNotePanel', NoProtectionsdNoteWarningDirective)
     .directive('searchOptions', SearchOptionsDirective)
@@ -157,7 +160,8 @@ const startApplication: StartApplication = async function startApplication(
     .directive('multipleSelectedNotesPanel', MultipleSelectedNotesDirective)
     .directive('notesContextMenu', NotesContextMenuDirective)
     .directive('notesOptionsPanel', NotesOptionsPanelDirective)
-    .directive('icon', IconDirective);
+    .directive('icon', IconDirective)
+    .directive('noteTagsContainer', NoteTagsContainerDirective);
 
   // Filters
   angular.module('app').filter('trusted', ['$sce', trusted]);
@@ -186,7 +190,8 @@ const startApplication: StartApplication = async function startApplication(
 if (__WEB__) {
   startApplication(
     (window as any)._default_sync_server,
-    new BrowserBridge(__VERSION__)
+    new BrowserBridge(__VERSION__),
+    (window as any)._next_version_sync_server
   );
 } else {
   (window as any).startApplication = startApplication;
